@@ -59,67 +59,75 @@ MAPDATA = """14567892107654348943218769016567650154541210421036
 # 45678903
 # 32019012
 # 01329801
-# 10456732
-# """
+# 10456732"""
 
 map = []
 for y, line in enumerate(MAPDATA.split("\n")):
     for x, elevation in enumerate(line):
         if len(map) <= x:
             map.append([])
-        map[x].append(int(elevation))
+        map[x].append(int(elevation) if elevation != "." else -1)
 
 
 def peaks_reachable_from_here(x, y, peaks_reached):
     global map
     current_elevation = map[x][y]
-    # print(
-    #     f"in count_paths_to_top({x}, {y}, {peaks_reached}), current elevation = {current_elevation}"
-    # )
 
     if current_elevation == 9:
-        if (x, y) not in peaks_reached:
-            # print("Heretofore unreached peak found! Scoring it.")
-            return set(((x, y),))
-        return set()
+        return set(((x, y),)), 1
 
+    rating = 0
     try:
         if map[x + 1][y] == current_elevation + 1:
-            peaks_reached |= peaks_reachable_from_here(x + 1, y, peaks_reached)
+            new_peaks, path_count = peaks_reachable_from_here(x + 1, y, peaks_reached)
+            peaks_reached |= new_peaks
+            rating += path_count
     except IndexError:
         pass
     try:
         if x > 0 and map[x - 1][y] == current_elevation + 1:
-            peaks_reached |= peaks_reachable_from_here(x - 1, y, peaks_reached)
+            new_peaks, path_count = peaks_reachable_from_here(x - 1, y, peaks_reached)
+            peaks_reached |= new_peaks
+            rating += path_count
     except IndexError:
         pass
     try:
         if map[x][y + 1] == current_elevation + 1:
-            peaks_reached |= peaks_reachable_from_here(x, y + 1, peaks_reached)
+            new_peaks, path_count = peaks_reachable_from_here(x, y + 1, peaks_reached)
+            peaks_reached |= new_peaks
+            rating += path_count
     except IndexError:
         pass
     try:
         if y > 0 and map[x][y - 1] == current_elevation + 1:
-            peaks_reached |= peaks_reachable_from_here(x, y - 1, peaks_reached)
+            new_peaks, path_count = peaks_reachable_from_here(x, y - 1, peaks_reached)
+            peaks_reached |= new_peaks
+            rating += path_count
     except IndexError:
         pass
-    return peaks_reached
+    return peaks_reached, rating
 
 
 def find_trailheads():
     global map
     trailheads = []
+    trailhead_ratings = []
     for x, col in enumerate(map):
         for y, elevation in enumerate(col):
             if elevation == 0:
-                peaks_reached = peaks_reachable_from_here(x, y, set())
+                peaks_reached, rating = peaks_reachable_from_here(x, y, set())
                 score = len(peaks_reached)
-                # print(f"Scoring the trailhead at {x}, {y} as {score}")
+                # print(
+                #     f"Scoring the trailhead at {x}, {y} as {score}, rating = {rating}"
+                # )
                 trailheads.append(score)
-    return trailheads
+                trailhead_ratings.append(rating)
+    return trailheads, trailhead_ratings
 
 
 if __name__ == "__main__":
-    trailheads = find_trailheads()
-    # print(f"Scores of the {len(trailheads)} trailheads: {trailheads}")
-    print(f"Total score of {len(trailheads)} trailheads: {sum(trailheads)}")
+    trailheads, trailhead_ratings = find_trailheads()
+    print(f"Total of scores of {len(trailheads)} trailheads: {sum(trailheads)}")
+    print(
+        f"Total of ratings of {len(trailhead_ratings)} trailheads: {sum(trailhead_ratings)}"
+    )
