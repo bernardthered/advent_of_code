@@ -1,9 +1,10 @@
 import os
+from typing import List
 
-# script_path = os.path.dirname(os.path.realpath(__file__))
-# disk_map = open("day_09_input.txt").read()
+script_path = os.path.dirname(os.path.realpath(__file__))
+disk_map = open("day_09_input.txt").read()
 
-disk_map = "2333133121414131402"
+# disk_map = "2333133121414131402"
 print(f"Length of the disk map: {len(disk_map)}")
 
 
@@ -20,17 +21,21 @@ class FileList(list):
     def __repr__(self):
         return "".join([str(file) for file in self])
 
+    def to_block_list(self):
+        block_list = [file.number for file in self for _ in range(file.size)]
+        return block_list
 
-def calc_checksum(file_list: FileList) -> int:
+
+def calc_checksum(block_list: List[int]) -> int:
     checksum = 0
-    for i, file in enumerate(file_list):
-        checksum += i * file.number if file.number not in [None, "."] else 0
+    for i, file_number in enumerate(block_list):
+        checksum += i * int(file_number) if file_number not in [None, "."] else 0
     return checksum
 
 
 def get_file_list_from_disk_map(disk_map) -> tuple[FileList, int]:
     """
-    Returns a 2-tuple of the FileList and the highest file number
+    Return a 2-tuple of the FileList and the highest file number
     """
     file_list = FileList()
     file_index = 0
@@ -73,7 +78,9 @@ def find_file_to_move_and_destination(file_blocks, file_number):
 
 
 def move_file(file_blocks, file_index, empty_index):
-    """move the file block to the location of the empty block in the file_blocks list"""
+    """
+    Move the file block to the location of the empty block in the file_blocks list
+    """
     # print(
     #     f"Moving file {file_blocks[file_index].number} from {file_index} to {empty_index}"
     # )
@@ -90,6 +97,8 @@ def move_file(file_blocks, file_index, empty_index):
         file_blocks[file_index].number = "."
 
         # Add a new empty block whose size is the leftover empty space from the old empty block
+        # Note: we could combine this with other empty File objects at the end of the chain to
+        # clean things up, but it's not necessary.
         file_blocks.insert(empty_index + 1, File(".", empty_size - file_size))
 
 
@@ -101,16 +110,15 @@ def defrag(file_list, highest_file_number):
         if file_index and file_index > empty_index:
             move_file(file_list, file_index, empty_index)
     return file_list
-    # NOTE: need to keep track of which file # it is. Probably makes sense to define a new class to store both the length of the file and its file number, then rearrange those in a list
 
 
 def part2():
     file_list, highest_file_number = get_file_list_from_disk_map(disk_map)
     print(f"Found {highest_file_number+1} files, now defragging.")
-    print(f"{len(file_list)} file chunks pre-defragging.")
     file_list = defrag(file_list, highest_file_number)
-    print(f"{len(file_list)} file chunks post-defragging.")
-    print(calc_checksum(file_list))
+    block_list = file_list.to_block_list()
+    print(f"Computing checksum of {len(block_list)} blocks.")
+    print(calc_checksum(block_list))
 
 
 part2()
