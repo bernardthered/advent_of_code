@@ -1,10 +1,9 @@
 import os
 
-script_path = os.path.dirname(os.path.realpath(__file__))
-# disk_map = open(os.path.join(script_path, "day_09_input.txt")).read()
-disk_map = open("day_09_input.txt").read()
+# script_path = os.path.dirname(os.path.realpath(__file__))
+# disk_map = open("day_09_input.txt").read()
 
-# disk_map = "2333133121414131402"
+disk_map = "2333133121414131402"
 print(f"Length of the disk map: {len(disk_map)}")
 
 
@@ -22,56 +21,11 @@ class FileList(list):
         return "".join([str(file) for file in self])
 
 
-def get_block_map_from_disk_map(disk_map):
-    block_map = []
-    file_index = 0
-    for i, char in enumerate(disk_map):
-        blocks_used = int(char)
-        if i % 2 == 0:
-            # This is the # of blocks this file uses
-            block_map += [file_index for _ in range(blocks_used)]
-            file_index += 1
-        else:
-            # This is the # of empty blocks
-            block_map += [None for _ in range(blocks_used)]
-    return block_map
-
-
-def defrag1(block_map):
-    def reposition_next_empty_and_last_filled_blocks(
-        block_map, last_filled_block, next_empty_block
-    ):
-        next_empty_block = block_map.index(None, next_empty_block)
-        while block_map[last_filled_block] is None:
-            last_filled_block -= 1
-        return next_empty_block, last_filled_block
-
-    next_empty_block, last_filled_block = reposition_next_empty_and_last_filled_blocks(
-        block_map, len(block_map) - 1, 0
-    )
-
-    while next_empty_block < last_filled_block:
-        block_map[next_empty_block] = block_map[last_filled_block]
-        block_map[last_filled_block] = None
-        next_empty_block, last_filled_block = (
-            reposition_next_empty_and_last_filled_blocks(
-                block_map, last_filled_block, next_empty_block
-            )
-        )
-    return block_map
-
-
-def calc_checksum(block_map):
+def calc_checksum(file_list: FileList) -> int:
     checksum = 0
-    for i, file_number in enumerate(block_map):
-        checksum += i * int(file_number) if file_number not in [None, "."] else 0
+    for i, file in enumerate(file_list):
+        checksum += i * file.number if file.number not in [None, "."] else 0
     return checksum
-
-
-def part1():
-    block_map = get_block_map_from_disk_map(disk_map)
-    defrag1(block_map)
-    print(calc_checksum(block_map))
 
 
 def get_file_list_from_disk_map(disk_map) -> tuple[FileList, int]:
@@ -139,25 +93,24 @@ def move_file(file_blocks, file_index, empty_index):
         file_blocks.insert(empty_index + 1, File(".", empty_size - file_size))
 
 
-def defrag2(file_blocks, highest_file_number):
+def defrag(file_list, highest_file_number):
     for file_number in range(highest_file_number, 0, -1):
         file_index, empty_index = find_file_to_move_and_destination(
-            file_blocks, file_number
+            file_list, file_number
         )
         if file_index and file_index > empty_index:
-            move_file(file_blocks, file_index, empty_index)
-    return file_blocks
+            move_file(file_list, file_index, empty_index)
+    return file_list
     # NOTE: need to keep track of which file # it is. Probably makes sense to define a new class to store both the length of the file and its file number, then rearrange those in a list
 
 
 def part2():
-    file_blocks, highest_file_number = get_file_list_from_disk_map(disk_map)
-    print(f"Found {highest_file_number} files, now defragging.")
-    defragged_disk_map = defrag2(file_blocks, highest_file_number)
-    # print(defragged_disk_map)
-    # block_map = get_block_map_from_disk_map(defragged_disk_map)
-    # print(file_blocks)
-    print(calc_checksum(str(file_blocks)))
+    file_list, highest_file_number = get_file_list_from_disk_map(disk_map)
+    print(f"Found {highest_file_number+1} files, now defragging.")
+    print(f"{len(file_list)} file chunks pre-defragging.")
+    file_list = defrag(file_list, highest_file_number)
+    print(f"{len(file_list)} file chunks post-defragging.")
+    print(calc_checksum(file_list))
 
 
 part2()
