@@ -8,17 +8,21 @@ import time
 DIRECTIONS = {0: "up", 1: "right", 2: "down", 3: "left"}
 LOGLEVEL = 15
 
-garden_map = open("day_11_input.txt").read()
+garden_map = open("day_12_input.txt").read()
 # garden_map = """AAAA
 # BBCD
 # BBCC
 # EEEC"""
-# garden_map = """AAAAAA
-# AAABBA
-# AAABBA
-# ABBAAA
-# ABBAAA
-# AAAAAA"""
+garden_map = """RRRRIICCFF
+RRRRIICCCF
+VVRRRCCFFF
+VVRCCCJFFF
+VVVVCJJCFE
+VVIVCCJJEE
+VVIIICJJEE
+MIIIIIJJEE
+MIIISIJEEE
+MMMISSJEEE"""
 highest_row_num = 0
 highest_col_num = 0
 message_row = 0

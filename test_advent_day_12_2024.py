@@ -1,6 +1,6 @@
 import unittest
 
-from advent_day_11_2024 import compute_cost_of_garden
+from advent_day_12_2024 import compute_cost_of_garden
 
 
 sample_data_part1 = [
