@@ -2,27 +2,43 @@
 # https://adventofcode.com/2024/day/12
 
 import curses
+import os
 import time
 
 
 DIRECTIONS = {0: "up", 1: "right", 2: "down", 3: "left"}
-LOGLEVEL = 15
+LOGLEVEL = 100
 
-garden_map = open("day_12_input.txt").read()
+script_path = os.path.dirname(os.path.realpath(__file__))
+# garden_map = open(os.path.join(script_path, "day_12_input.txt")).read()
 # garden_map = """AAAA
 # BBCD
 # BBCC
 # EEEC"""
-garden_map = """RRRRIICCFF
-RRRRIICCCF
-VVRRRCCFFF
-VVRCCCJFFF
-VVVVCJJCFE
-VVIVCCJJEE
-VVIIICJJEE
-MIIIIIJJEE
-MIIISIJEEE
-MMMISSJEEE"""
+garden_map = """
+RRRRIICCFFFFCCIIRRRRRRRRIICCFFFFCCIIRRRR
+RRRRIICCCFFCCCIIRRRRRRRRIICCCFFCCCIIRRRR
+VVRRRCCFFFFFFCCRRRVVVVRRRCCFFFFFFCCRRRVV
+VVRCCCJFFFFFFJCCCRVVVVRCCCJFFFFFFJCCCRVV
+VVVVCJJCFEEFCJJCVVVVVVVVCJJCFEEFCJJCVVVV
+VVIVCCJJEEEEJJCCVIVVVVIVCCJJEEEEJJCCVIVV
+VVIIICJJEEEEJJCIIIVVVVIIICJJEEEEJJCIIIVV
+MIIIIIJJEEEEJJIIIIIMMIIIIIJJEEEEJJIIIIIM
+MIIISIJEEEEEEJISIIIMMIIISIJEEEEEEJISIIIM
+MMMISSJEEEEEEJSSIMMMMMMISSJEEEEEEJSSIMMM
+MMMISSJEEEEEEJSSIMMMMMMISSJEEEEEEJSSIMMM
+MIIISIJEEEEEEJISIIIMMIIISIJEEEEEEJISIIIM
+MIIIIIJJEEEEJJIIIIIMMIIIIIJJEEEEJJIIIIIM
+VVIIICJJEEEEJJCIIIVVVVIIICJJEEEEJJCIIIVV
+VVIVCCJJEEEEJJCCVIVVVVIVCCJJEEEEJJCCVIVV
+VVVVCJJCFEEFCJJCVVVVVVVVCJJCFEEFCJJCVVVV
+VVRCCCJFFFFFFJCCCRVVVVRCCCJFFFFFFJCCCRVV
+VVRRRCCFFFFFFCCRRRVVVVRRRCCFFFFFFCCRRRVV
+RRRRIICCCFFCCCIIRRRRRRRRIICCCFFCCCIIRRRR
+RRRRIICCFFFFCCIIRRRRRRRRIICCFFFFCCIIRRRR
+"""
+
+
 highest_row_num = 0
 highest_col_num = 0
 message_row = 0
@@ -59,7 +75,7 @@ def convert_map_to_array(garden):
             garden_rows[row_num].append(GardenSquare(letter))
     highest_row_num = row_num
     highest_col_num = len(garden_rows[0]) - 1
-    message_row = highest_row_num + 6
+    message_row = highest_row_num + 7
     return garden_rows
 
 
@@ -147,8 +163,9 @@ def map_region(
     color_pair = letter_colors.get(this_veggie.upper(), 0)
     addch(row_num, col_num, this_veggie, color_pair)
     addstr(highest_row_num + 2, 0, f"Area: {area}            ")
+    addstr(highest_row_num + 5, 0, f"Vegetable: {this_veggie}            ")
     if screen:
-        time.sleep(0.5)
+        time.sleep(0.003)
 
     adjacent_squares = get_adjacent_squares(row_num, col_num)
     adjacent_squares_to_add_to_region = []
@@ -216,6 +233,7 @@ def compute_cost_of_garden(garden, style=1):
     draw_garden(garden_rows)
     total_area = 0
     total_cost = 0
+    number_of_regions = 0
     for row_num in range(highest_row_num + 1):
         for col_num in range(highest_col_num + 1):
             if (row_num, col_num) in visited:
@@ -232,6 +250,7 @@ def compute_cost_of_garden(garden, style=1):
                 f"Found a region of {veggie} of area {area}, perimeter {perimeter}, and {sides} sides, making its fencing cost ${cost}.",
                 20,
             )
+            number_of_regions += 1
             total_area += area
             total_cost += cost
 
@@ -241,7 +260,8 @@ def compute_cost_of_garden(garden, style=1):
             f"WARNING: the total area ({total_area}) does not equal the size of the garden map ({len(garden)}) ",
             30,
         )
-    log(f"Total cost: {total_cost}", 20)
+    log(f"Total area: {total_area} in {number_of_regions} regions", 100)
+    log(f"Total fencing cost: ${total_cost}", 100)
     return total_cost
 
 
@@ -252,7 +272,7 @@ def draw_garden(array):
             addch(row_idx, col_idx, char)
 
 
-def main(stdscr):
+def animate_computation_of_garden_cost(stdscr):
     global screen, letter_colors
     screen = stdscr
 
@@ -279,5 +299,6 @@ def main(stdscr):
 
 
 if __name__ == "__main__":
+    # Swap the commenting of these lines to change it from animating the computation to just doing it without visualization
     # compute_cost_of_garden(garden_map, 2)
-    curses.wrapper(main)
+    curses.wrapper(animate_computation_of_garden_cost)
