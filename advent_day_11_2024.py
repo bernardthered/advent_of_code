@@ -1,8 +1,12 @@
 # Solution to
 # https://adventofcode.com/2024/day/12
 
-DIRECTIONS = {0: "up", 1: "right", 2: "down", 3: "left"}
+import curses
+import time
 
+
+DIRECTIONS = {0: "up", 1: "right", 2: "down", 3: "left"}
+LOGLEVEL = 15
 
 # garden_map = open("day_11_input.txt").read()
 garden_map = """AAAA
@@ -11,11 +15,20 @@ BBCC
 EEEC"""
 highest_row_num = 0
 highest_col_num = 0
+message_row = 0
+screen = None
+letter_colors = {}
 
 
-def log(msg):
-    if False:
-        print(msg)
+def log(msg, level=10):
+    global message_row, screen
+    if level >= LOGLEVEL:
+        if screen:
+            screen.addstr(message_row, 0, msg)
+            message_row += 1
+            screen.refresh()
+        else:
+            print(msg)
 
 
 class GardenSquare(str):
@@ -26,8 +39,7 @@ class GardenSquare(str):
 
 
 def convert_map_to_array(garden):
-    global highest_row_num
-    global highest_col_num
+    global highest_row_num, highest_col_num, message_row
 
     garden_rows = []
     garden = garden.strip()
@@ -37,6 +49,7 @@ def convert_map_to_array(garden):
             garden_rows[row_num].append(GardenSquare(letter))
     highest_row_num = row_num
     highest_col_num = len(garden_rows[0]) - 1
+    message_row = highest_row_num + 6
     return garden_rows
 
 
@@ -79,18 +92,41 @@ def is_new_side(garden_rows, adjacent_squares, direction, this_veggie):
     return True
 
 
-def map_region(garden_rows, visited, row_num, col_num) -> tuple[int, int]:
+def addstr(*args, **kwargs):
+    if screen:
+        screen.addstr(*args, **kwargs)
+        screen.refresh()
+
+
+def addch(*args, **kwargs):
+    if screen:
+        if len(args) > 3:
+            screen.addch(*args[:3], curses.color_pair(args[3]), **kwargs)
+        else:
+            screen.addch(*args, **kwargs)
+        screen.refresh()
+
+
+def map_region(
+    garden_rows, visited, row_num, col_num, area=0, perimeter=0, sides=0
+) -> tuple[int, int]:
     """
     Return the area and perimeter of this region.
 
     Add each consitutent location in the garden to the visited set.
     """
     log(f"  Processing square at {col_num}, {row_num}")
-    area = 1  # This square
+    area += 1  # This square
     this_veggie = garden_rows[row_num][col_num]
-    perimeter = 0
-    sides = 0
+    # perimeter = 0
+    # sides = 0
     visited.add((row_num, col_num))
+
+    color_pair = letter_colors.get(this_veggie.upper(), 0)
+    addch(row_num, col_num, this_veggie, color_pair)
+    addstr(highest_row_num + 2, 0, f"Area: {area}            ")
+    if screen:
+        time.sleep(0.5)
 
     adjacent_squares = get_adjacent_squares(row_num, col_num)
 
@@ -105,9 +141,11 @@ def map_region(garden_rows, visited, row_num, col_num) -> tuple[int, int]:
         ):
             perimeter += 1
             this_veggie.sides[direction] = True
+            addstr(highest_row_num + 3, 0, f"Perimeter: {perimeter}                ")
             # check if this is a new side that we are starting
             if is_new_side(garden_rows, adjacent_squares, direction, this_veggie):
                 sides += 1
+                addstr(highest_row_num + 4, 0, f"Sides: {sides}                   ")
             continue
         log(
             f"    Looking at adjacent square of {adjacent_veggie} ({adjacent_col_num}, {adjacent_row_num})"
@@ -117,13 +155,15 @@ def map_region(garden_rows, visited, row_num, col_num) -> tuple[int, int]:
             continue
 
         # It's the same veggie! Recurse, adding the adjacent square's area & perimeter to our own
-        adjacent_area, adjacent_perimeter, adjacent_sides = map_region(
-            garden_rows, visited, adjacent_row_num, adjacent_col_num
+        area, perimeter, sides = map_region(
+            garden_rows,
+            visited,
+            adjacent_row_num,
+            adjacent_col_num,
+            area,
+            perimeter,
+            sides,
         )
-        area += adjacent_area
-        perimeter += adjacent_perimeter
-        sides += adjacent_sides
-
     return area, perimeter, sides
 
 
@@ -138,6 +178,7 @@ def compute_cost_of_garden(garden, style=1):
     visited = set()
 
     garden_rows = convert_map_to_array(garden)
+    draw_garden(garden_rows)
     total_area = 0
     total_cost = 0
     for row_num in range(highest_row_num + 1):
@@ -152,20 +193,55 @@ def compute_cost_of_garden(garden, style=1):
                 cost = area * perimeter
             else:
                 cost = area * sides
-            print(
-                f"Found a region of {veggie} of area {area}, perimeter {perimeter}, and {sides} sides, making its fencing cost ${cost}."
+            log(
+                f"Found a region of {veggie} of area {area}, perimeter {perimeter}, and {sides} sides, making its fencing cost ${cost}.",
+                20,
             )
             total_area += area
             total_cost += cost
 
     garden = garden.replace("\n", "")
     if total_area != len(garden):
-        print(
-            f"WARNING: the total area ({total_area}) does not equal the size of the garden map ({len(garden)}) "
+        log(
+            f"WARNING: the total area ({total_area}) does not equal the size of the garden map ({len(garden)}) ",
+            30,
         )
-    print(f"Total cost: ", total_cost)
+    log(f"Total cost: {total_cost}", 20)
     return total_cost
 
 
-if __name__ == "__main__":
+def draw_garden(array):
+    """Draws the initial 2D array on the screen with colors."""
+    for row_idx, row in enumerate(array):
+        for col_idx, char in enumerate(row):
+            addch(row_idx, col_idx, char)
+
+
+def main(stdscr):
+    global screen, letter_colors
+    screen = stdscr
+
+    # Hide the cursor
+    curses.curs_set(0)
+
+    # Initialize color pairs
+    curses.start_color()
+    curses.use_default_colors()
+
+    for i, letter in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+        curses.init_pair(
+            i + 1,
+            min(i * 10, 255),
+            -1,
+        )
+        letter_colors[letter] = i + 1
+
     compute_cost_of_garden(garden_map, 2)
+
+    # Wait for user input
+    log("(Press any key to continue)", 30)
+    stdscr.getch()
+
+
+if __name__ == "__main__":
+    curses.wrapper(main)
