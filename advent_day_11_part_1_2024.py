@@ -1,9 +1,8 @@
-import os
-from typing import List
+# Solution to
+# https://adventofcode.com/2024/day/12
 
-# script_path = os.path.dirname(os.path.realpath(__file__))
+
 garden_map = open("day_11_input.txt").read()
-
 highest_row_num = 0
 highest_col_num = 0
 
@@ -25,9 +24,6 @@ def convert_map_to_array(garden):
             garden_rows[row_num].append(letter)
     highest_row_num = row_num
     highest_col_num = len(garden_rows[0]) - 1
-    if highest_col_num > 4:
-        print("hmm")
-    print(f"highest_col_num = {highest_col_num}, highest_row_num = {highest_row_num}")
     return garden_rows
 
 
@@ -100,7 +96,7 @@ def compute_cost_of_garden(garden):
                 continue
 
             veggie = garden_rows[row_num][col_num]
-            print(f"Processing region of {veggie} starting at {col_num}, {row_num}")
+            log(f"Processing region of {veggie} starting at {col_num}, {row_num}")
             area, perimeter = map_region(garden_rows, visited, row_num, col_num)
             print(
                 f"Found a region of {veggie} of area {area} and perimeter {perimeter}, making its fencing cost {area * perimeter}."

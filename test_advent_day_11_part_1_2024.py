@@ -38,5 +38,4 @@ MMMISSJEEE""",
 class TestComputeCostOfGargen(unittest.TestCase):
     def test_with_sample_data(self):
         for garden, expected_cost in sample_data:
-            print(f"Testing garden '{garden}' w/ expected cost of {expected_cost}!")
             self.assertEqual(compute_cost_of_garden(garden), expected_cost)
