@@ -8,11 +8,17 @@ import time
 DIRECTIONS = {0: "up", 1: "right", 2: "down", 3: "left"}
 LOGLEVEL = 15
 
-# garden_map = open("day_11_input.txt").read()
-garden_map = """AAAA
-BBCD
-BBCC
-EEEC"""
+garden_map = open("day_11_input.txt").read()
+# garden_map = """AAAA
+# BBCD
+# BBCC
+# EEEC"""
+# garden_map = """AAAAAA
+# AAABBA
+# AAABBA
+# ABBAAA
+# ABBAAA
+# AAAAAA"""
 highest_row_num = 0
 highest_col_num = 0
 message_row = 0
@@ -74,22 +80,36 @@ def is_off_the_map(square):
     )
 
 
-def is_new_side(garden_rows, adjacent_squares, direction, this_veggie):
+def get_side_count_adjustment(garden_rows, adjacent_squares, direction, this_veggie):
+    """
+    Given the list of 4 coordinates of adjacent squares, plus the direction in which the fence was added,
+    determine if the fence is the start of a new side of fencing (return 1), is part of an existing side
+    of fencing (return 0), or is joining two previously separate sides of fencing (return -1).
+
+    This is accomplished by looking at the two squares that are next to the current square which would be along
+    the same span of fence if it were continued, and checking if either of them has already registered a side in
+    the same direction. If so, it is not a new side of fencing. If both of them already registered a side for
+    that direction, we've just joined two separate sides of fencing, and we need to decrement the side count by 1.
+    """
     orthogonal_direction = (direction - 1) % 4
     orthogonal_square = adjacent_squares[orthogonal_direction]
-
+    adjacent_fence_count = 0
     if not (is_off_the_map(orthogonal_square)):
         orthogonal_veggie = garden_rows[orthogonal_square[0]][orthogonal_square[1]]
         if orthogonal_veggie == this_veggie and orthogonal_veggie.sides[direction]:
-            return False
+            adjacent_fence_count += 1
 
     orthogonal_direction = (direction + 1) % 4
     orthogonal_square = adjacent_squares[orthogonal_direction]
     if not (is_off_the_map(orthogonal_square)):
         orthogonal_veggie = garden_rows[orthogonal_square[0]][orthogonal_square[1]]
         if orthogonal_veggie == this_veggie and orthogonal_veggie.sides[direction]:
-            return False
-    return True
+            adjacent_fence_count += 1
+    if adjacent_fence_count == 0:
+        return 1
+    if adjacent_fence_count == 2:
+        return -1
+    return 0
 
 
 def addstr(*args, **kwargs):
@@ -118,8 +138,6 @@ def map_region(
     log(f"  Processing square at {col_num}, {row_num}")
     area += 1  # This square
     this_veggie = garden_rows[row_num][col_num]
-    # perimeter = 0
-    # sides = 0
     visited.add((row_num, col_num))
 
     color_pair = letter_colors.get(this_veggie.upper(), 0)
@@ -129,6 +147,7 @@ def map_region(
         time.sleep(0.5)
 
     adjacent_squares = get_adjacent_squares(row_num, col_num)
+    adjacent_squares_to_add_to_region = []
 
     for direction in DIRECTIONS:
         adjacent_square = adjacent_squares[direction]
@@ -136,25 +155,37 @@ def map_region(
         # if it's off the map or a different veggie, add one to the perimeter and continue
         if (
             is_off_the_map(adjacent_square)
-            or (adjacent_veggie := garden_rows[adjacent_row_num][adjacent_col_num])
-            != this_veggie
+            or garden_rows[adjacent_row_num][adjacent_col_num] != this_veggie
         ):
             perimeter += 1
             this_veggie.sides[direction] = True
             addstr(highest_row_num + 3, 0, f"Perimeter: {perimeter}                ")
-            # check if this is a new side that we are starting
-            if is_new_side(garden_rows, adjacent_squares, direction, this_veggie):
-                sides += 1
+            # check if this is a new side that we are starting, or if we've just joined 2 separate segments
+            side_count_adjustment = get_side_count_adjustment(
+                garden_rows, adjacent_squares, direction, this_veggie
+            )
+            if side_count_adjustment:
+                sides += side_count_adjustment
                 addstr(highest_row_num + 4, 0, f"Sides: {sides}                   ")
+                # if this_veggie in ["A", "V", "J"]:
+                #     breakpoint()
             continue
         log(
-            f"    Looking at adjacent square of {adjacent_veggie} ({adjacent_col_num}, {adjacent_row_num})"
+            f"    Looking at adjacent square of {garden_rows[adjacent_row_num][adjacent_col_num]} ({adjacent_col_num}, {adjacent_row_num})"
         )
         # If it's already been visited, continue w/o adding to perimeter or area
         if (adjacent_row_num, adjacent_col_num) in visited:
             continue
 
-        # It's the same veggie! Recurse, adding the adjacent square's area & perimeter to our own
+        # It's the same veggie! Add it to the list of adjacent squares to recurse to after we have
+        # finished adding all the sides to this one
+        adjacent_squares_to_add_to_region.append((adjacent_row_num, adjacent_col_num))
+
+    for adjacent_row_num, adjacent_col_num in adjacent_squares_to_add_to_region:
+        # It may have been visited in the recursion since we added it to this list
+        if (adjacent_row_num, adjacent_col_num) in visited:
+            continue
+
         area, perimeter, sides = map_region(
             garden_rows,
             visited,
@@ -244,4 +275,5 @@ def main(stdscr):
 
 
 if __name__ == "__main__":
+    # compute_cost_of_garden(garden_map, 2)
     curses.wrapper(main)
