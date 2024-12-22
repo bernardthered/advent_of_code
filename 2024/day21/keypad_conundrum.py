@@ -4,7 +4,7 @@ import copy
 import os
 import re
 
-INPUT_FILE_NUMBER = 1
+INPUT_FILE_NUMBER = 2
 
 keypad = {
     "7": (0, 0),
@@ -18,6 +18,7 @@ keypad = {
     "3": (2, 2),
     "0": (3, 1),
     "A": (3, 2),
+    "verboten": (3, 0),
 }
 
 directional_pad = {
@@ -26,6 +27,7 @@ directional_pad = {
     "<": (1, 0),
     "v": (1, 1),
     ">": (1, 2),
+    "verboten": (0, 0),
 }
 
 
@@ -33,6 +35,20 @@ def parse_input():
     script_path = os.path.dirname(os.path.realpath(__file__))
     input_file = open(os.path.join(script_path, f"input_{INPUT_FILE_NUMBER}.txt"))
     return input_file.readlines()
+
+
+def move_horizontally(l1, l2):
+    Δx = l2[1] - l1[1]
+    if Δx < 0:
+        return "<" * abs(Δx)
+    return ">" * abs(Δx)
+
+
+def move_vertically(l1, l2):
+    Δy = l2[0] - l1[0]
+    if Δy < 0:
+        return "^" * abs(Δy)
+    return "v" * abs(Δy)
 
 
 def get_sequence_of_button_presses_for_single_move(char1, char2, pad):
@@ -45,17 +61,25 @@ def get_sequence_of_button_presses_for_single_move(char1, char2, pad):
     l1 = pad[char1]
     l2 = pad[char2]
 
-    Δx = l2[1] - l1[1]
-    Δy = l2[0] - l1[0]
+    move_horizontally_first = True
 
-    if Δx < 0:
-        sequence += "<" * abs(Δx)
-    elif Δx > 0:
-        sequence += ">" * abs(Δx)
-    if Δy < 0:
-        sequence += "^" * abs(Δy)
-    elif Δy > 0:
-        sequence += "v" * abs(Δy)
+    if l2[1] - l1[1] > 0:
+        # We are moving to the right
+        if not (l2[0], l1[1]) == pad["verboten"]:
+            # moving vertically first is safe
+            move_horizontally_first = False
+
+    if (l1[0], l2[1]) == pad["verboten"]:
+        # moving horizontally first is not safe, we need to move vertically first
+        move_horizontally_first = False
+
+    if move_horizontally_first:
+        sequence += move_horizontally(l1, l2)
+        sequence += move_vertically(l1, l2)
+    else:
+        sequence += move_vertically(l1, l2)
+        sequence += move_horizontally(l1, l2)
+
     return sequence + "A"
 
 
