@@ -2,6 +2,7 @@
 
 import copy
 import os
+import re
 
 INPUT_FILE_NUMBER = 1
 
@@ -35,6 +36,11 @@ def parse_input():
 
 
 def get_sequence_of_button_presses_for_single_move(char1, char2, pad):
+    # This approach is insufficient for 1+ reasons:
+    #   1) the robot cannot move its finger over the blank space on the keypad
+    #   2) to optimize for shortest path, we may need to strategically end the intermediary
+    #      robot arms over one button instead of another. Perhaps this doesn't matter, since
+    #      they need to move to the A after every set of moves. Needs further consideration.
     sequence = ""
     l1 = pad[char1]
     l2 = pad[char2]
@@ -53,28 +59,42 @@ def get_sequence_of_button_presses_for_single_move(char1, char2, pad):
     return sequence + "A"
 
 
-def get_sequence_of_button_presses_for_code(code):
+def get_sequence_of_button_presses_for_code(code, pad):
     sequence = ""
     startingchar = "A"
     for char in code:
         sequence += get_sequence_of_button_presses_for_single_move(
-            startingchar, char, keypad
+            startingchar, char, pad
         )
         startingchar = char
         # sequence += get_sequence_of_button_presses_for_single_move(char, "A", keypad)
-    print(f"Code: {code}, seq: {sequence}")
+    # print(f"Code: {code}, seq: {sequence}")
     return sequence
 
 
 def get_code_complexity(code):
-    return len(get_sequence_of_button_presses_for_code(code.strip()))
+    first_directional_pad_sequence = get_sequence_of_button_presses_for_code(
+        code, keypad
+    )
+    second_directional_pad_sequence = get_sequence_of_button_presses_for_code(
+        first_directional_pad_sequence, directional_pad
+    )
+    third_directional_pad_sequence = get_sequence_of_button_presses_for_code(
+        second_directional_pad_sequence, directional_pad
+    )
+    numeric_part_of_code = re.sub("^0*", "", code)
+    numeric_part_of_code = re.sub("A", "", numeric_part_of_code)
+    complexity = len(third_directional_pad_sequence) * int(numeric_part_of_code)
+    print(
+        f"Code: {code}, {len(third_directional_pad_sequence)} * {int(numeric_part_of_code)}, {third_directional_pad_sequence}"
+    )
+    return complexity
 
 
 def get_code_complexities(codes):
     answer = 0
     for code in codes:
-        answer += get_code_complexity(code)
-        break
+        answer += get_code_complexity(code.strip())
     return answer
 
 
