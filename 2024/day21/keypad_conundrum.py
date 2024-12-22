@@ -63,10 +63,12 @@ def get_button_presses_for_move(char1, char2, padname) -> str:
     l1 = pad[char1]
     l2 = pad[char2]
 
+    # Move horizontally first by default
     move_horizontally_first = True
 
     if l2[1] - l1[1] > 0:
-        # We are moving to the right
+        # We are moving to the right. When moving right, it's most efficient to
+        # move vertically first, if it's safe
         if not (l2[0], l1[1]) == pad["verboten"]:
             # moving vertically first is safe
             move_horizontally_first = False
