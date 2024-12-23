@@ -1,5 +1,6 @@
 # Solution to https://adventofcode.com/2024/day/22
 
+import collections
 import os
 
 INPUT_FILE_NUMBER = 2
@@ -33,6 +34,26 @@ def calculate_nth_secret(secret, depth=2000):
     return secret
 
 
+def cache_sequences_of_changes(secret, depth=2000):
+    cache = collections.OrderedDict()
+    last_four_changes = collections.deque()
+    previous_price = secret % 10
+    for i in range(depth - 1):
+        next_secret = calculate_next_secret(secret)
+        price = next_secret % 10
+        change = price - previous_price
+        last_four_changes.append(change)
+        if len(last_four_changes) > 4:
+            last_four_changes.popleft()
+        if len(last_four_changes) == 4:
+            if tuple(last_four_changes) not in cache:
+                # only the first occurence of each sequence counts
+                cache[tuple(last_four_changes)] = price
+        secret = next_secret
+        previous_price = price
+    return cache
+
+
 def part1(initial_secrets):
     answer = 0
     for initial_secret in initial_secrets:
@@ -44,16 +65,43 @@ def part1(initial_secrets):
     return answer
 
 
+def calculate_sum_of_prices_for_sequence(list_of_changes, caches):
+    sum = 0
+    for cache in caches:
+        sum += cache.get(list_of_changes, 0)
+    return sum
+
+
+def find_optimal_sequence(caches):
+    best_price = 0
+    best_sequence = None
+    already_seen = set()
+
+    for cache in caches:
+        for list_of_changes in cache:
+            if list_of_changes in already_seen:
+                continue
+            already_seen.add(list_of_changes)
+
+            total_price_for_sequence = calculate_sum_of_prices_for_sequence(
+                list_of_changes, caches
+            )
+            if total_price_for_sequence > best_price:
+                best_price = total_price_for_sequence
+                best_sequence = list_of_changes
+    print(f"best_sequence: {best_sequence}, best_price: {best_price}")
+    return best_price
+
+
 def part2(initial_secrets):
-    answer = 0
+    caches = []
+    for initial_secret in initial_secrets:
+        caches.append(cache_sequences_of_changes(int(initial_secret), 2000))
+    print(f"{len(caches)} caches complete")
+    answer = find_optimal_sequence(caches)
     print(answer)
 
 
 if __name__ == "__main__":
     initial_secrets = parse_input()
-    part1(initial_secrets)
-    # part1(
-    #     [
-    #         123,
-    #     ]
-    # )
+    part2(initial_secrets)
