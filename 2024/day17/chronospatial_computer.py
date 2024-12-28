@@ -2,10 +2,11 @@
 # https://adventofcode.com/2024/day/17
 
 import os
+import time
 
 register = {}
 instruction_pointer = 0
-INPUT_FILENUMBER = 2
+INPUT_FILENUMBER = 3
 
 
 def combo(operand):
@@ -120,8 +121,9 @@ def run_program(program_string: str):
         instruction = int(program_string[instruction_pointer])
         operand = int(program_string[instruction_pointer + 1])
         operation_method = OPERATION[instruction]
-        print(f"Running {operation_method}({operand})")
+        # print(f"Running {operation_method}({operand})")
         ret = operation_method(operand)
+        print(register)
         if ret is not None:
             outputs.append(str(ret))
         instruction_pointer += 2
@@ -147,5 +149,35 @@ def part1():
     print(f"Outputs: {outputs}")
 
 
+def part2():
+    # Brute force attempt. Not effective, the answer must be very high.
+    program = parse_input()
+    print(program)
+    t1 = time.time()
+
+    register["A"] = 0
+    orig_b = register["B"]
+    orig_c = register["C"]
+    # outputs = run_program(program)
+    # print(f"program:'{program}'")
+    # print(f"outputs:'{outputs}'")
+
+    i = 16000000
+    while True:
+        i += 1
+        if i % 1000000 == 0:
+            print(f"{int(time.time()-t1)}s A == {i}")
+            print(f"program:'{program}'")
+            print(f"outputs:'{outputs}'")
+            print()
+
+        register["A"] = i
+        register["B"] = orig_b
+        register["C"] = orig_c
+        outputs = run_program(program)
+        if outputs == program:
+            return i
+
+
 if __name__ == "__main__":
-    part1()
+    print(part1())
