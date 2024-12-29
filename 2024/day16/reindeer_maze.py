@@ -19,7 +19,7 @@ def construct_map(input_filenumber: int) -> list[list[str]]:
 
     script_path = os.path.dirname(os.path.realpath(__file__))
     input = open(os.path.join(script_path, f"input_{input_filenumber}.txt"))
-    map = [list(line.strip()) for line in input.readlines()]
+    map = [list(line.strip()) for line in input.readlines() if line]
 
     height = len(map)
     width = len(map[0])
@@ -77,37 +77,26 @@ def find_min_score_between_two_points(map) -> int:
 
         score, location, dir = heappop(next_step_locations)
         # print(f"{score}, {location}, {dir}")
+        visited.add((location[0], location[1], dir))
 
         # The end point is always in the upper right corner
         if location == (1, width - 2):
-            print(f"seeing multiple: {seeing_multiple}")
             return score
 
         for newscore, newloc, newdir in get_adjacent_squares_costs_and_new_directions(
             score, location, dir
         ):
-            # print(f"  considering {newloc}")
             y, x = newloc
             if map[y][x] == "#":
                 continue
 
             if (y, x, newdir) not in visited:
                 heappush(next_step_locations, (newscore, newloc, newdir))
-                visited.add((y, x, newdir))
-
-            if isinstance(map[y][x], int) and map[y][x] <= newscore:
-                continue
-
-            map[y][x] = newscore
 
 
 def part1():
-    map = construct_map(1)
+    map = construct_map(3)
     print(find_min_score_between_two_points(map))
-    # map = construct_map(2)
-    # print(find_min_score_between_two_points(map))
-    # map = construct_map(3)
-    # print(find_min_score_between_two_points(map))
 
 
 if __name__ == "__main__":
