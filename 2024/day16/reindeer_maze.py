@@ -69,10 +69,8 @@ def find_min_score_between_two_points(map) -> int:
     # The start is always in the lower left corner (with # walls inbetween it and the sides of the map)
     # Starting direction always east (1)
     heappush(next_step_locations, (0, (height - 2, 1), 1))
-    seeing_multiple = 0
     while True:
         if not next_step_locations:
-            # break
             raise NoRouteExists(f"Couldn't find a path")
 
         score, location, dir = heappop(next_step_locations)
@@ -91,6 +89,7 @@ def find_min_score_between_two_points(map) -> int:
                 continue
 
             if (y, x, newdir) not in visited:
+
                 heappush(next_step_locations, (newscore, newloc, newdir))
 
 
