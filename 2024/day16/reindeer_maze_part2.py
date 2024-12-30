@@ -1,6 +1,7 @@
 # Solution to
 # https://adventofcode.com/2024/day/16
 
+from collections import deque
 from heapq import heappop, heappush
 import os
 
@@ -9,17 +10,23 @@ height = 0
 width = 0
 
 
-class NoRouteExists(Exception):
-    pass
+class MapRow(list):
+    def __str__(self):
+        return "".join([str(char).rjust(5) for char in self])
 
 
-def construct_map(input_filenumber: int) -> list[list[str]]:
+class Map(list):
+    def __str__(self):
+        return "\n\n".join([str(row) for row in self])
+
+
+def construct_map(input_filenumber: int) -> Map[list[str]]:
     global height
     global width
 
     script_path = os.path.dirname(os.path.realpath(__file__))
     input = open(os.path.join(script_path, f"input_{input_filenumber}.txt"))
-    map = [list(line.strip()) for line in input.readlines() if line]
+    map = Map(MapRow(line.strip()) for line in input.readlines() if line)
 
     height = len(map)
     width = len(map[0])
@@ -66,8 +73,7 @@ def get_adjacent_squares_costs_and_new_directions(
 
 def find_min_score_between_two_points(map) -> int:
     """
-    Modified Dijkstra's algorithm. It does not keep track of the path taken, as that
-    isn't needed for this problem (just the score to get to the end node).
+    Modified Dijkstra's algorithm.
 
     Keeps the set of next locations to process as a heapq sorted list so we can cheaply get
     the item with the least score by popping it off the left hand side.
@@ -75,107 +81,78 @@ def find_min_score_between_two_points(map) -> int:
     Return the minimum number of steps to get from start to end.
     """
     next_step_locations = []
+    visited = set()
+    scores = {}
 
     # Starting score always 0
     # The start is always in the lower left corner (with # walls inbetween it and the sides of the map)
     # Starting direction always east (1)
-    heappush(next_step_locations, (0, (height - 2, 1), 1))
+    heappush(next_step_locations, (0, (height - 2, 1), (None, None), 1))
     previous_locations = {}
 
-    while True:
-        if not next_step_locations:
-            break
-            # raise NoRouteExists(f"Couldn't find a path")
-        bad = False
+    while next_step_locations:
         score, location, dir = heappop(next_step_locations)
-        if score < 0:
-            bad = True
-            # two chances
-        score = abs(int(score))
+        y, x = location
+        if location == (2, width - 1):
+            # This is the ending square. No reason to move through it and check adjacent squares
+            continue
 
-        map[location[0]][location[1]] = score
-        # if location == (9, 3):
-        #     print(score)
-
-        # print(f"{score}, {location}, {dir}")
-        # visited.add((location[0], location[1], dir))
-
-        # The end point is always in the upper right corner
-        # if location == (1, width - 2):
-        #     return score
         for newscore, newloc, newdir in get_adjacent_squares_costs_and_new_directions(
             score, location, dir
         ):
-            y, x = newloc
-            if map[y][x] == "#":
+
+            newy, newx = newloc
+            if map[newy][newx] == "#" or (newy, newx, dir) in visited:
                 continue
 
-            oldscore = map[y][x]
-
-            if isinstance(oldscore, int) and oldscore == newscore:
-                print(f"Tie at {y},{x} ({newscore})!")
-            if isinstance(oldscore, int) and oldscore < newscore:
-                if bad == True:
-                    continue
-                else:
-                    newscore = -newscore
+            old_score = (
+                scores[(newy, newx, newdir)] if (newy, newx, newdir) in scores else None
+            )
+            if old_score:
+                if old_score == newscore:
+                    previous_locations[(newy, newx, newdir)].add((y, x, dir))
+                elif old_score > newscore:
+                    scores[(newy, newx, newdir)] = newscore
+                    previous_locations[(newy, newx, newdir)] = set([(y, x, dir)])
+            else:
+                scores[(newy, newx, newdir)] = newscore
+                previous_locations[(newy, newx, newdir)] = set([(y, x, dir)])
 
             heappush(next_step_locations, (newscore, newloc, newdir))
-            if (y, x) not in previous_locations:
-                previous_locations[(y, x)] = set()
-                previous_locations[(y, x)].add((location[0], location[1]))
-            else:
-                if (y, x) not in previous_locations:
-                    print(f"previous_locations ({y}, {x}) was previously populated!")
-                    print(previous_locations[(y, x)])
-                    print(f"Adding {location[0]}, {location[1]}")
+        visited.add((y, x, dir))
 
-                previous_locations[(y, x)].add((location[0], location[1]))
-            # if newloc == (8, 3):
-            #     visited = follow_and_count_previous_locations(
-            #         previous_locations, newloc
-            #     )
-            #     print_map(map, visited)
-            #     print(newscore)
-    return previous_locations
+    return previous_locations, scores
 
 
-def follow_and_count_previous_locations(
-    previous_locations, location=None, visited=None
-):
-    """
-    DFS that
-    """
-    if visited is None:
-        visited = set()
-    if location is None:
-        # start at the end
-        location = (1, width - 2)
+def follow_and_count_previous_locations(previous_locations, scores):
+    q = deque()
+    on_the_path = set([(1, width - 2)])
 
-    visited.add(location)
+    score_moving_north = scores.get((1, width - 2, 0), None)
+    score_moving_east = scores.get((1, width - 2, 1), None)
 
-    if location == (height - 2, 1):
-        return visited
+    if score_moving_north <= score_moving_east:
+        q.append(previous_locations[(1, width - 2, 0)])
+    if score_moving_east <= score_moving_north:
+        q.append(previous_locations[(1, width - 2, 1)])
 
-    # if len(previous_locations[location]) > 1:
-    #     print(f"previous_locations for {location} is {previous_locations[location]}")
-
-    for previous_location in previous_locations[location]:
-        if previous_location not in visited:
-            follow_and_count_previous_locations(
-                previous_locations, previous_location, visited
-            )
-    return visited
+    while q:
+        previous_loc_set = q.popleft()
+        for prev_loc in previous_loc_set:
+            on_the_path.add((prev_loc[0], prev_loc[1]))
+            q.append(previous_locations.get(prev_loc, set()))
+    on_the_path.add((height - 2, 1))
+    return on_the_path
 
 
 def part2():
-    map = construct_map(2)
-
-    previous_locations = find_min_score_between_two_points(map)
-    print(f"Score at the end: {map[1][width - 2]}")
-    visited = follow_and_count_previous_locations(previous_locations)
+    map = construct_map(3)
+    previous_locations, scores = find_min_score_between_two_points(map)
+    visited = follow_and_count_previous_locations(previous_locations, scores)
+    print()
     print_map(map, visited)
     print(len(visited))
+    print()
 
 
 if __name__ == "__main__":
