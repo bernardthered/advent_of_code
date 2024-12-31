@@ -3,6 +3,7 @@
 
 
 from itertools import combinations, permutations, product
+import math
 import os
 import time
 
@@ -39,22 +40,41 @@ def input_lines_to_antenna_locations(lines):
     return antennas
 
 
-def determine_antinode_locations(antennas):
+def find_all_antinodes_for_one_direction(
+    position, x_increment, y_increment, limit=math.inf
+):
+    # For part 1, set the limit to 1
+    antinodes = set()
+    position = (position[0] + x_increment, position[1] + y_increment)
+    while (
+        0 <= position[0] < width
+        and 0 <= position[1] < height
+        and len(antinodes) < limit
+    ):
+        antinodes.add(position)
+        position = (position[0] + x_increment, position[1] + y_increment)
+    return antinodes
+
+
+def determine_antinode_locations(antennas, part1=False):
+    limit = math.inf
+    if part1:
+        limit = 1
     antinodes = set()
     for char in antennas:
-        print(f"{char}:")
         for a1, a2 in combinations(antennas[char], 2):
-            print(f"  {a1} - {a2}")
+            if not part1:
+                antinodes.add(a1)
+                antinodes.add(a2)
             distance_x = a2[0] - a1[0]
             distance_y = a2[1] - a1[1]
-            antinode1 = (a2[0] + distance_x, a2[1] + distance_y)
-            antinode2 = (a1[0] - distance_x, a1[1] - distance_y)
-            if 0 <= antinode1[0] < width and 0 <= antinode1[1] < height:
-                antinodes.add(antinode1)
-            if 0 <= antinode2[0] < width and 0 <= antinode2[1] < height:
-                antinodes.add(antinode2)
-    print(antinodes)
-    return len(antinodes)
+            antinodes |= find_all_antinodes_for_one_direction(
+                a2, distance_x, distance_y, limit
+            )
+            antinodes |= find_all_antinodes_for_one_direction(
+                a1, -distance_x, -distance_y, limit
+            )
+    return antinodes
 
 
 if __name__ == "__main__":
@@ -62,6 +82,4 @@ if __name__ == "__main__":
     input = open(os.path.join(script_path, "input_3.txt"))
     lines = input.readlines()
     antennas = input_lines_to_antenna_locations(lines)
-    print(antennas)
-    print()
-    print(determine_antinode_locations(antennas))
+    print(len(determine_antinode_locations(antennas, part1=False)))
