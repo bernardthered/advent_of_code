@@ -4,11 +4,10 @@
 
 from functools import cache
 import os
-import time
 
 
 @cache
-def blink_one_stone(stone: int) -> list[int]:
+def blink_one_stone_once(stone: int) -> list[int]:
     if stone == 0:
         return [1]
     stonestr = str(stone)
@@ -19,19 +18,22 @@ def blink_one_stone(stone: int) -> list[int]:
     return [stone * 2024]
 
 
-def blink(stones: list, iterations: int = 5) -> list[int]:
-    t1 = time.time()
-    for i in range(iterations):
-        if i == 1 or i % 5 == 0:
-            print(
-                f"{int(time.time() - t1)}s: {i}/{iterations} blinks, {len(stones)} stones."
-            )
-        new_stones = []
-        for stone in stones:
-            new_stones += blink_one_stone(stone)
-        # print(new_stones)
-        stones = new_stones
-    return new_stones
+@cache
+def recursive_blink(stone, depth=0, maxdepth=75) -> int:
+    count = 0
+    if depth == maxdepth:
+        return 1
+    new_stones = blink_one_stone_once(stone)
+    for new_stone in new_stones:
+        count = count + recursive_blink(new_stone, depth + 1, maxdepth)
+    return count
+
+
+def blink_multiple_stones(stones: list, iterations: int = 5) -> int:
+    stone_count = 0
+    for stone in stones:
+        stone_count += recursive_blink(stone, 0, iterations)
+    return stone_count
 
 
 if __name__ == "__main__":
@@ -39,4 +41,4 @@ if __name__ == "__main__":
     input = open(os.path.join(script_path, "input_2.txt"))
     line = input.readline()
     stones = [int(stone) for stone in line.split()]
-    print(len(blink(stones, 25)))
+    print(blink_multiple_stones(stones, 75))
