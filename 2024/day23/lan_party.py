@@ -2,7 +2,6 @@
 # https://adventofcode.com/2024/day/23
 
 
-import copy
 from itertools import combinations
 import os
 import networkx as nx
@@ -38,22 +37,21 @@ def part1():
     # plt.show()
 
 
-def bron_kerbosch(candidate_clique, available_vertices, exclude, G):
+def bron_kerbosch(candidate_clique: set, available_vertices: set, exclude: set, G):
     max_max_clique = set()
     if not available_vertices and not exclude:
         # The candidate_clique is a maximum clique!
         return candidate_clique
-    pruned_available_vertices = copy.copy(available_vertices)
-    for vertex in available_vertices:
+    while available_vertices:
+        vertex = available_vertices.pop()
         max_clique = bron_kerbosch(
             candidate_clique | set([vertex]),
-            pruned_available_vertices & set(G[vertex]),
+            available_vertices & set(G[vertex]),
             exclude & set(G[vertex]),
             G,
         )
         if len(max_clique) > len(max_max_clique):
             max_max_clique = max_clique
-        pruned_available_vertices.remove(vertex)
         exclude.add(vertex)
     return max_max_clique
 
