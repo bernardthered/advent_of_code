@@ -128,7 +128,7 @@ def annotate_map_with_distances_from_point(map, start) -> int:
         steps_from_start += 1
 
 
-def find_cheats(
+def find_one_wall_cheats(
     distances_from_start, distances_from_end, walls, original_solution, min_savings=100
 ):
     # for each wall in the map:
@@ -170,7 +170,7 @@ def part1():
     annotate_map_with_distances_from_point(distances_from_end, end)
     print("Number of cheats: ", end="")
     print(
-        find_cheats(
+        find_one_wall_cheats(
             distances_from_start,
             distances_from_end,
             walls,
@@ -180,5 +180,90 @@ def part1():
     )
 
 
+def count_multi_step_cheats(
+    location,
+    distances_from_start,
+    distances_from_end,
+    original_solution,
+    min_savings=100,
+):
+    """
+    Return the # of cheats starting from `location` that save at least 100ns and end within 20 spaces of location.
+    """
+    cheat_count = 0
+    min_y = max(location[0] - 20, 0)
+    max_y = min(location[0] + 20, height - 1)
+    dist_from_start = distances_from_start[location[0]][location[1]]
+
+    for y in range(min_y, max_y + 1):
+        delta_y = abs(location[0] - y)
+        max_delta_x = 20 - delta_y
+        min_x = max(location[1] - max_delta_x, 0)
+        max_x = min(location[1] + max_delta_x, width - 2)
+        for x in range(min_x, max_x + 1):
+
+            dist_from_end = distances_from_end[y][x]
+            if dist_from_end == -1:
+                continue
+
+            dist_from_start_to_end_of_cheat = abs(location[0] - y) + abs(
+                location[1] - x
+            )
+            cost_with_cheat = (
+                dist_from_start + dist_from_start_to_end_of_cheat + dist_from_end
+            )
+            if cost_with_cheat <= original_solution - min_savings:
+                cheat_count += 1
+    return cheat_count
+
+
+def find_multi_wall_cheats(
+    start,
+    map,
+    distances_from_start,
+    distances_from_end,
+    original_solution,
+    min_savings=100,
+):
+    cheat_count = 0
+
+    next_step_locations = set([start])
+    steps_from_start = 0
+
+    while True:
+        if not next_step_locations:
+            return cheat_count
+
+        locations = next_step_locations.copy()
+        next_step_locations = set()
+        for location in locations:
+            next_step_locations |= get_adjacent_empty_squares(map, location)
+            # only needed to prevent get_adjacent_empty_squares() from returning this one again later:
+            map[location[0]][location[1]] = steps_from_start
+            cheat_count += count_multi_step_cheats(
+                location,
+                distances_from_start,
+                distances_from_end,
+                original_solution,
+                min_savings,
+            )
+        steps_from_start += 1
+
+
+def part2():
+    map, start, end, _ = construct_map(2)
+    distances_from_start = copy.deepcopy(map)
+    distances_from_end = copy.deepcopy(map)
+    annotate_map_with_distances_from_point(distances_from_start, start)
+    original_solution = distances_from_start[end[0]][end[1]]
+    print(f"Solution with no cheats: {original_solution}")
+    annotate_map_with_distances_from_point(distances_from_end, end)
+    print(
+        find_multi_wall_cheats(
+            start, map, distances_from_start, distances_from_end, original_solution, 100
+        )
+    )
+
+
 if __name__ == "__main__":
-    part1()
+    part2()
