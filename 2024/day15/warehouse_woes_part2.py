@@ -18,51 +18,27 @@ def build_block_of_barrels(map, spots_to_check, direction) -> list[tuple[int, in
     while spots_to_check:
         spot_to_check = spots_to_check.popleft()
         spot = map[spot_to_check[0]][spot_to_check[1]]
-        if direction in (">", "<"):
-            if spot in ("[", "]", "@"):
-                spots_to_move.append((spot_to_check[0], spot_to_check[1]))
-                spots_to_check.append(
-                    (
-                        spot_to_check[0] + DIRECTIONS[direction][0],
-                        spot_to_check[1] + DIRECTIONS[direction][1],
-                    )
-                )
-            if spot == ".":
-                return spots_to_move
-            if spot == "#":
-                return []
-        elif direction in ("^", "v"):
-            if spot == "@":
-                spots_to_move.append((spot_to_check[0], spot_to_check[1]))
-                spots_to_check.append(
-                    (
-                        spot_to_check[0] + DIRECTIONS[direction][0],
-                        spot_to_check[1] + DIRECTIONS[direction][1],
-                    )
-                )
-            elif spot in ("[", "]"):
-                spots_to_move.append((spot_to_check[0], spot_to_check[1]))
-                # add the other half of the barrel to the spots to check
+
+        if spot in "[]@":
+            spots_to_move.append((spot_to_check[0], spot_to_check[1]))
+            if direction in "^v" and spot in "[]":
+                # Add the other half of the barrel to the spots to check
                 if spot == "[":
                     other_half = (spot_to_check[0], spot_to_check[1] + 1)
                 elif spot == "]":
                     other_half = (spot_to_check[0], spot_to_check[1] - 1)
                 if other_half not in spots_to_check and other_half not in spots_to_move:
                     spots_to_check.append(other_half)
-                # add the spot above/below this half of the barrel to the spots to check
-                above_or_below = (
-                    spot_to_check[0] + DIRECTIONS[direction][0],
-                    spot_to_check[1],
-                )
-                if (
-                    above_or_below not in spots_to_check
-                    and above_or_below not in spots_to_move
-                ):
-                    spots_to_check.append(above_or_below)
-            elif spot == ".":
-                pass
-            elif spot == "#":
-                return []
+            next_spot = (
+                spot_to_check[0] + DIRECTIONS[direction][0],
+                spot_to_check[1] + DIRECTIONS[direction][1],
+            )
+            if next_spot not in spots_to_check and next_spot not in spots_to_move:
+                spots_to_check.append(next_spot)
+        if spot == ".":
+            pass
+        if spot == "#":
+            return []
     return spots_to_move
 
 
