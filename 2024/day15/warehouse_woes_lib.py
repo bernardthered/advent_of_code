@@ -11,16 +11,14 @@ DIRECTIONS = {
 
 def print_map(map):
     for line in map:
-        for char in line:
-            print(char, end="")
-        print()
+        print("".join(line))
 
 
 def calculate_gps_sum(map):
     total = 0
     for y, line in enumerate(map):
         for x, char in enumerate(line):
-            if char == "O":
+            if char in ["O", "["]:
                 total += (y * 100) + x
     return total
 

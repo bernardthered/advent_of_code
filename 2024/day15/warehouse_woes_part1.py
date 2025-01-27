@@ -1,5 +1,5 @@
 # Solution to
-# https://adventofcode.com/2024/day/15
+# https://adventofcode.com/2024/day/15 part 1
 
 
 from warehouse_woes_lib import print_map, read_input, calculate_gps_sum, DIRECTIONS
