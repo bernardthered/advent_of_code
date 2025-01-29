@@ -6,11 +6,9 @@ import re
 import time
 
 INPUT_FILE_NUMBER = 2
-# For ppart 1, this should be 3, for part 2, it should be 26
-DEPTH_OF_ROBOTS = 26
 
 PADS = {
-    "keypad": {
+    "num_pad": {
         "7": (0, 0),
         "8": (0, 1),
         "9": (0, 2),
@@ -87,38 +85,43 @@ def get_button_presses_for_move(char1, char2, padname) -> str:
     return sequence + "A"
 
 
-def get_button_presses_for_code(code, pad):
+@functools.cache
+def get_button_presses_for_code(code, pad, quiet=False):
     sequence = ""
     startingchar = "A"
     for char in code:
         sequence += get_button_presses_for_move(startingchar, char, pad)
         startingchar = char
-    # print(f"Code: {code}, seq: {sequence}")
+    if not quiet:
+        print(f"Code: {code}, seq: {sequence}")
     return sequence
 
 
 def get_outer_sequence(code, levels_deep):
     t1 = time.time()
-    current_pad_sequence = get_button_presses_for_code(code, "keypad")
+    current_pad_sequence = get_button_presses_for_code(code, "num_pad")
     for i in range(levels_deep - 1):
         td = int(time.time() - t1)
-        print(
-            f"{i+1}/{levels_deep - 1}, {td}s: current length = {len(current_pad_sequence)}"
-        )
+        # print(
+        #     f"{i+1}/{levels_deep - 1}, {td}s: current length = {len(current_pad_sequence)}"
+        # )
         current_pad_sequence = get_button_presses_for_code(
-            current_pad_sequence, "directional_pad"
+            current_pad_sequence, "directional_pad", quiet=True
         )
     return current_pad_sequence
 
 
 def get_outer_code_complexity(code):
-    outer_sequence = get_outer_sequence(code, DEPTH_OF_ROBOTS)
+    # For part 1, this should be 3, for part 2, it would be 26
+    depth_of_robots = 3
+    outer_sequence = get_outer_sequence(code, depth_of_robots)
     numeric_part_of_code = re.sub("^0*", "", code)
     numeric_part_of_code = re.sub("A", "", numeric_part_of_code)
     complexity = len(outer_sequence) * int(numeric_part_of_code)
-    # print(
-    #     f"Code: {code}, {len(outer_sequence)} * {int(numeric_part_of_code)}, {outer_sequence}"
-    # )
+    print(outer_sequence)
+    print(
+        f"For code: {code}, complexity = {len(outer_sequence)} * {int(numeric_part_of_code)}"
+    )
     return complexity
 
 
